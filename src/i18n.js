@@ -3,6 +3,8 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpApi from 'i18next-http-backend';
 
+const savedLang = localStorage.getItem("lang") || "ar"; // ✅ default to Arabic
+
 i18n
   .use(HttpApi)
   .use(LanguageDetector)
