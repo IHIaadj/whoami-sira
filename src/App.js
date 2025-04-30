@@ -4,6 +4,8 @@ import HomePage from "./pages/HomePage";
 import LobbyPage from "./pages/LobbyPage";
 import { useTranslation } from "react-i18next";
 import GamePage from "./pages/GamePage";
+import InstallPrompt from "./components/InstallPrompt"; // adjust path as needed
+
 
 function LanguageSwitcher() {
   const { i18n } = useTranslation();
@@ -23,6 +25,7 @@ function App() {
         <Route path="/lobby/:code" element={<LobbyPage />} />
         <Route path="/game/:code" element={<GamePage />} />
       </Routes>
+      <InstallPrompt />
     </Router>
   );
 }
