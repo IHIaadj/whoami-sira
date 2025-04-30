@@ -1,0 +1,81 @@
+{
+    "title": "Who Am I? — Sīrah Edition",
+    "createTeam": "➕ Create a Team",
+    "enterTeamCode": "Enter Team Code",
+    "joinTeam": "🔗 Join Team",
+    "startGame": "🚀 Start Game",
+    "teamCode": "Team Code",
+    "players": "Joined Players",
+    "currentRound": "🎯 Current Round",
+    "dedication": "Dedicated to our beloved grandmother Khadija Aktouf Ben Meziane 🤍", 
+    "timeLeft": "⏱ Time Left",
+    "yourTurn": "🤔 Try to guess who you are by asking questions!",
+    "notYourTurn": "🔐 Character",
+    "correctGuess": "✅ Player guessed correctly",
+    "gameOver": "🏁 Game Over!",
+    "results": "🏆 Leaderboard",
+    "newGame": "🔄 Start a New Game", 
+    "seconds": "seconds",
+    "characterNames": {
+        "waraka": "Waraqah ibn Nawfal",
+        "khadija": "Khadija bint Khuwaylid",
+        "abu_bakr": "Abu Bakr al-Siddiq",
+        "umar": "Umar ibn al-Khattab",
+        "bilal": "Bilal ibn Rabah",
+        "salman": "Salman al-Farisi"
+    },
+    "facts": {
+  "waraka": [
+    "Cousin of Khadija bint Khuwaylid, the Prophet’s ﷺ wife.",
+    "A Christian scholar who read Hebrew scriptures.",
+    "The first to believe in the Prophet ﷺ after revelation.",
+    "Said: 'Would that I were young when your people drive you out.'",
+    "He died shortly after the first revelation."
+  ],
+  "khadija": [
+    "The Prophet’s ﷺ first wife and mother of his children.",
+    "One of the most respected and wealthy women of Quraysh.",
+    "The first to believe in the Prophet’s message.",
+    "Supported him financially and emotionally in early Islam.",
+    "Given glad tidings of a palace in Paradise by Angel Jibril."
+  ],
+  "abu_bakr": [
+    "The first man to embrace Islam.",
+    "The Prophet’s ﷺ companion during the migration to Madinah.",
+    "Spent much of his wealth in support of Islam.",
+    "Freed oppressed Muslim slaves like Bilal.",
+    "The first caliph after the Prophet’s ﷺ death."
+  ],
+  "umar": [
+    "Converted after years of secret preaching.",
+    "The Prophet ﷺ prayed: 'O Allah, strengthen Islam with ʿUmar.'",
+    "Known for justice and strength in truth.",
+    "Oversaw massive Islamic expansion as caliph.",
+    "The second caliph, martyred while praying."
+  ],
+  "bilal": [
+    "An Abyssinian slave who embraced Islam early.",
+    "He endured torture while repeating: 'Ahad, Ahad' (One, One).",
+    "Freed by Abu Bakr al-Siddiq.",
+    "The first muezzin (caller to prayer) in Islam.",
+    "The Prophet ﷺ loved his voice and said: 'Relieve us with it, O Bilal.'"
+  ],
+  "salman": [
+    "Undertook a long journey in search of truth.",
+    "Converted from Christianity and joined the Prophet ﷺ in Madinah.",
+    "Suggested digging a trench during the Battle of the Trench.",
+    "The Prophet ﷺ said: 'Salman is one of us, the people of the household.'",
+    "He became a model of knowledge, piety, and endurance."
+  ]
+}, 
+"howToPlayTitle": "📖 How to Play",
+"howToPlaySteps": [
+  "Create a team or join an existing one by entering the team code.",
+  "Wait for all players to join. The host can then start the game.",
+  "Each player is assigned a Sīrah character and must guess who they are by asking yes/no questions.",
+  "During your turn, you can’t see your own character; others see it and validate if your guess is right.",
+  "The game ends when everyone has guessed. The fastest correct guesser wins!"
+]
+
+  }
+  
