@@ -20,7 +20,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [gameState, setGameState] = useState(null);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(120);
   const timerRef = useRef(null);
 
   const { t, i18n } = useTranslation();
@@ -131,7 +131,7 @@ export default function GamePage() {
     await update(ref(db, `teams/${code}/game`), { validated: true });
   };
 
-  // Host ends turn (either timeout or correct guess)
+ 
   const handleEndTurn = async (guessedCorrectly) => {
     const gameRef = ref(db, `teams/${code}/game`);
     const snap = await get(gameRef);
@@ -139,21 +139,38 @@ export default function GamePage() {
 
     const currentPlayer = game.turnOrder[game.currentTurnIndex];
     const guessTimes = game.guessTimes || {};
+    const completed = game.completed || [];
 
-    if (guessedCorrectly) {
-      const timeTaken = 60 - timer;
+    if (guessedCorrectly && !completed.includes(currentPlayer)) {
+      const timeTaken = 120 - timer;
       guessTimes[currentPlayer] = timeTaken;
+      completed.push(currentPlayer);
     }
 
-    const nextIndex = game.currentTurnIndex + 1;
-    const isFinished = nextIndex >= game.turnOrder.length;
+    // Compute next turn for someone not yet completed
+    const totalPlayers = game.turnOrder.length;
+    let nextIndex = game.currentTurnIndex;
+    let found = false;
+
+    for (let i = 1; i <= totalPlayers; i++) {
+      const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
+      const candidate = game.turnOrder[candidateIndex];
+      if (!completed.includes(candidate)) {
+        nextIndex = candidateIndex;
+        found = true;
+        break;
+      }
+    }
+
+    const gameFinished = completed.length === totalPlayers;
 
     await update(gameRef, {
       guessTimes,
       currentTurnIndex: nextIndex,
       validated: false,
-      remainingTime: 60,
-      gameFinished: isFinished
+      remainingTime: 120,
+      completed,
+      gameFinished
     });
   };
 
