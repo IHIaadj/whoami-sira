@@ -76,7 +76,7 @@ export default function GamePage() {
         currentTurnIndex: 0,
         characters: assignedChars,
         validated: false,
-        remainingTime: 60,
+        remainingTime: 120,
         guessTimes: {},
         gameFinished: false
       });
@@ -89,7 +89,7 @@ export default function GamePage() {
 
     const currentPlayer = gameState.turnOrder?.[gameState.currentTurnIndex];
     if (currentPlayer) {
-      let countdown = 60;
+      let countdown = 120;
       set(ref(db, `teams/${code}/game/remainingTime`), countdown);
 
       clearInterval(timerRef.current);
@@ -188,7 +188,7 @@ export default function GamePage() {
       currentTurnIndex: 0,
       characters: assignedChars,
       validated: false,
-      remainingTime: 60,
+      remainingTime: 120,
       guessTimes: {},
       gameFinished: false
     });
