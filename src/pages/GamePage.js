@@ -217,51 +217,73 @@ export default function GamePage() {
     });
   };
   
-  const handleEndTurn = async (guessedCorrectly) => {
-    const gameRef = ref(db, `teams/${code}/game`);
-    const snap = await get(gameRef);
-    const game = snap.val();
+// ADDITION: New handler to proceed to next player manually after reveal
+const handleRevealAndWait = async () => {
+  const gameRef = ref(db, `teams/${code}/game`);
+  const snap = await get(gameRef);
+  const game = snap.val();
 
-    const currentPlayer = game.turnOrder[game.currentTurnIndex];
-    const guessTimes = game.guessTimes || {};
-    const completed = game.completed || [];
+  const currentPlayer = game.turnOrder[game.currentTurnIndex];
+  const guessTimes = game.guessTimes || {};
+  const completed = game.completed || [];
 
-    if (guessedCorrectly && !completed.includes(currentPlayer)) {
-      const timeTaken = 120 - timer;
-      guessTimes[currentPlayer] = timeTaken;
-      completed.push(currentPlayer);
+  const timeTaken = 120 - timer;
+  guessTimes[currentPlayer] = timeTaken;
+  completed.push(currentPlayer);
+
+  const totalPlayers = game.turnOrder.length;
+  let nextIndex = game.currentTurnIndex;
+
+  for (let i = 1; i <= totalPlayers; i++) {
+    const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
+    const candidate = game.turnOrder[candidateIndex];
+    if (!completed.includes(candidate)) {
+      nextIndex = candidateIndex;
+      break;
     }
+  }
 
-    const totalPlayers = game.turnOrder.length;
-    let nextIndex = game.currentTurnIndex;
-    const nextPlayer = game.turnOrder[nextIndex];
-    const tentativeCount = game.tentativeCount || {};
-    tentativeCount[nextPlayer] = 0;
+  const gameFinished = completed.length === totalPlayers;
 
+  await update(gameRef, {
+    guessTimes,
+    currentTurnIndex: nextIndex,
+    validated: false,
+    remainingTime: 120,
+    completed,
+    gameFinished,
+    tentativePlayer: null,
+    tentativeTime: null,
+    tentativeCount: {},
+    showCharacter: false
+  });
+};
 
-    for (let i = 1; i <= totalPlayers; i++) {
-      const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
-      const candidate = game.turnOrder[candidateIndex];
-      if (!completed.includes(candidate)) {
-        nextIndex = candidateIndex;
-        break;
-      }
-    }
+// MODIFY: handleEndTurn to pause and reveal character instead of progressing immediately
+const handleEndTurn = async (guessedCorrectly) => {
+  const gameRef = ref(db, `teams/${code}/game`);
+  const snap = await get(gameRef);
+  const game = snap.val();
 
-    const gameFinished = completed.length === totalPlayers;
+  const currentPlayer = game.turnOrder[game.currentTurnIndex];
+  const guessTimes = game.guessTimes || {};
+  const completed = game.completed || [];
 
-    await update(gameRef, {
-      guessTimes,
-      currentTurnIndex: nextIndex,
-      validated: false,
-      remainingTime: 120,
-      completed,
-      gameFinished,
-      tentativePlayer: null,
-      tentativeTime: null,
-      tentativeCount  // 👈 include the reset
-    });    
-  };
+  if (guessedCorrectly && !completed.includes(currentPlayer)) {
+    const timeTaken = 120 - timer;
+    guessTimes[currentPlayer] = timeTaken;
+    completed.push(currentPlayer);
+  }
+
+  await update(gameRef, {
+    guessTimes,
+    completed,
+    tentativePlayer: null,
+    tentativeTime: null,
+    showCharacter: true // New reveal flag
+  });
+};
+
 
   const handleRestartGame = async () => {
     const gameRef = ref(db, `teams/${code}/game`);
@@ -328,6 +350,22 @@ export default function GamePage() {
     );
   }
 
+  if (gameState?.showCharacter) {
+    const revealedChar = gameState?.characters?.[gameState.turnOrder[gameState.currentTurnIndex]];
+    const revealedFacts = t(`facts.${revealedChar}`, { returnObjects: true, defaultValue: [] });
+  
+    return (
+      <div style={styles.wrapper}>
+        <h2 style={styles.roundTitle}>✅ {t("characterWas")}: {t(`characterNames.${revealedChar}`)}</h2>
+        <CharacterCard name={t(`characterNames.${revealedChar}`)} facts={revealedFacts} />
+        {isHost && (
+          <button onClick={handleRevealAndWait} style={styles.validateButton}>
+            ⏭️ {t("nextPlayer")}
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
