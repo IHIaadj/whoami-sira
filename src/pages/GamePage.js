@@ -89,7 +89,7 @@ export default function GamePage() {
 
 
       await set(gameRef, {
-        turnOrder: shuffled,
+        turnOrder: shuffledPlayers,
         currentTurnIndex: 0,
         characters: assignedChars,
         validated: false,
