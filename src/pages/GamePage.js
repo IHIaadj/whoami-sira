@@ -9,8 +9,19 @@ const charactersPool = [
   "khadija",
   "abu_bakr",
   "umar",
-  "bilal",
-  "salman"
+  "bilal", 
+  "salman",
+  "uthman",
+  "abdullah_az_zubayr",
+  "ali",
+  "abdurrahman",
+  "talha",
+  "abu_ubaidah",
+  "saad",
+  "saeed",
+  "um_kulthum",
+  "hafsa",
+  "sumayya",
 ];
 
 export default function GamePage() {
