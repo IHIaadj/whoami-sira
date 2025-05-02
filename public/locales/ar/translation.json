@@ -270,7 +270,9 @@
 "validateGuess": "تأكيد التخمين",
   "rejectGuess": "رفض التخمين",
   "makeTentative": "تقديم تخمين",
-  "waitingValidation": "بانتظار تقييم التخمين من اللاعبين الآخرين"
+  "waitingValidation": "بانتظار تقييم التخمين من اللاعبين الآخرين", 
+  "characterWas": "كانت الشخصية",
+  "nextPlayer": "اللاعب التالي"
 
 
 }

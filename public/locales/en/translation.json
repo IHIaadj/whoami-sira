@@ -97,7 +97,9 @@
 "validateGuess": "Validate Guess",
 "rejectGuess": "Reject Guess",
 "makeTentative": "Make a Tentative Guess",
-"waitingValidation": "Waiting for others to validate your guess..."
+"waitingValidation": "Waiting for others to validate your guess...", 
+"characterWas": "The character was",
+  "nextPlayer": "Next player"
 
   }
   

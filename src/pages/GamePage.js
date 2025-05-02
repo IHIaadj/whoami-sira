@@ -237,10 +237,10 @@ const handleRevealAndWait = async () => {
   for (let i = 1; i <= totalPlayers; i++) {
     const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
     const candidate = game.turnOrder[candidateIndex];
-    if (!completed.includes(candidate)) {
-      nextIndex = candidateIndex;
-      break;
+    if (!completed.includes(currentPlayer)) {
+      completed.push(currentPlayer);
     }
+    
   }
 
   const gameFinished = completed.length === totalPlayers;
