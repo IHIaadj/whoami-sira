@@ -224,8 +224,8 @@ const handleRevealAndWait = async () => {
   const game = snap.val();
 
   const currentPlayer = game.turnOrder[game.currentTurnIndex];
-  const guessTimes = game.guessTimes || {};
-  const completed = game.completed || [];
+  const guessTimes = { ...(game.guessTimes || {}) };
+  const completed = [...(game.completed || [])]; // 🔧 ensure immutability
 
   if (!completed.includes(currentPlayer)) {
     const timeTaken = 120 - timer;
