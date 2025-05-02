@@ -266,14 +266,18 @@ export default function GamePage() {
   const handleRestartGame = async () => {
     const gameRef = ref(db, `teams/${code}/game`);
   
-    const shuffled = [...players].sort(() => 0.5 - Math.random());
+    // Shuffle players and characters
+    const shuffledPlayers = [...players].sort(() => 0.5 - Math.random());
+    const shuffledCharacters = [...charactersPool].sort(() => 0.5 - Math.random());
+  
     const assignedChars = {};
-    shuffled.forEach((p, i) => {
-      assignedChars[p] = charactersPool[i % charactersPool.length];
+    shuffledPlayers.forEach((p, i) => {
+      assignedChars[p] = shuffledCharacters[i % shuffledCharacters.length];
     });
   
+    // Reset game state in the database
     await set(gameRef, {
-      turnOrder: shuffled,
+      turnOrder: shuffledPlayers,
       currentTurnIndex: 0,
       characters: assignedChars,
       validated: false,
@@ -285,6 +289,10 @@ export default function GamePage() {
       tentativeCount: {},
       completed: []
     });
+  
+    // Reset hint display locally
+    setHintUsed(false);
+    setHintFact("");
   };
   
 
