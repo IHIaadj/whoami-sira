@@ -22,6 +22,9 @@ const charactersPool = [
   "um_kulthum",
   "hafsa",
   "sumayya",
+  "aisha", 
+  "zaynab_bint_djahch", 
+  "umm_salama"
 ];
 
 export default function GamePage() {
@@ -76,11 +79,14 @@ export default function GamePage() {
     const snap = await get(gameRef);
 
     if (!snap.exists()) {
-      const shuffled = [...players].sort(() => 0.5 - Math.random());
+      const shuffledPlayers = shuffleArray(players);
+      const shuffledCharacters = shuffleArray(charactersPool);
+
       const assignedChars = {};
-      shuffled.forEach((p, i) => {
-        assignedChars[p] = charactersPool[i % charactersPool.length];
+      shuffledPlayers.forEach((p, i) => {
+        assignedChars[p] = shuffledCharacters[i % shuffledCharacters.length];
       });
+
 
       await set(gameRef, {
         turnOrder: shuffled,
