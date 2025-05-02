@@ -74,6 +74,14 @@ export default function GamePage() {
     });
   }, [isHost, players]);
 
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
   const initializeGame = async () => {
     const gameRef = ref(db, `teams/${code}/game`);
     const snap = await get(gameRef);
