@@ -227,27 +227,29 @@ const handleRevealAndWait = async () => {
   const guessTimes = game.guessTimes || {};
   const completed = game.completed || [];
 
-  const timeTaken = 120 - timer;
-  guessTimes[currentPlayer] = timeTaken;
-  completed.push(currentPlayer);
+  if (!completed.includes(currentPlayer)) {
+    const timeTaken = 120 - timer;
+    guessTimes[currentPlayer] = timeTaken;
+    completed.push(currentPlayer);
+  }
 
   const totalPlayers = game.turnOrder.length;
-  let nextIndex = game.currentTurnIndex;
+  let nextIndex = null;
 
   for (let i = 1; i <= totalPlayers; i++) {
     const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
     const candidate = game.turnOrder[candidateIndex];
-    if (!completed.includes(currentPlayer)) {
-      completed.push(currentPlayer);
+    if (!completed.includes(candidate)) {
+      nextIndex = candidateIndex;
+      break;
     }
-    
   }
 
-  const gameFinished = completed.length === totalPlayers;
+  const gameFinished = nextIndex === null;
 
   await update(gameRef, {
     guessTimes,
-    currentTurnIndex: nextIndex,
+    currentTurnIndex: nextIndex ?? game.currentTurnIndex,
     validated: false,
     remainingTime: 120,
     completed,
@@ -258,6 +260,7 @@ const handleRevealAndWait = async () => {
     showCharacter: false
   });
 };
+
 
 // MODIFY: handleEndTurn to pause and reveal character instead of progressing immediately
 const handleEndTurn = async (guessedCorrectly) => {
