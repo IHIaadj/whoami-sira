@@ -1,0 +1,4 @@
+#Fri May 02 16:50:21 CEST 2025
+base.0=/Users/hab/sira-game/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
