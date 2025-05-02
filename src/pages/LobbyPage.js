@@ -26,11 +26,19 @@ export default function LobbyPage() {
   }, [i18n.language]);
 
   useEffect(() => {
+    const storedKey = localStorage.getItem("playerKey");
+    if (storedKey) {
+      playerKeyRef.current = storedKey;
+    }
+  }, []);
+
+  useEffect(() => {
     if (!hasJoinedRef.current) {
       const playersRef = ref(db, `teams/${code}/players`);
       const newPlayerRef = push(playersRef);
       set(newPlayerRef, name);
       playerKeyRef.current = newPlayerRef.key;
+      localStorage.setItem("playerKey", newPlayerRef.key);
 
       const metaRef = ref(db, `teams/${code}/meta`);
       get(metaRef).then((snap) => {
