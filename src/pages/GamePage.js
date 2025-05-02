@@ -136,7 +136,6 @@ export default function GamePage() {
     const gameRef = ref(db, `teams/${code}/game`);
     const snap = await get(gameRef);
     const game = snap.val();
-
     const currentPlayer = game.turnOrder[game.currentTurnIndex];
     const guessTimes = game.guessTimes || {};
     const completed = game.completed || [];
