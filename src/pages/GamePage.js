@@ -13,7 +13,6 @@ const charactersPool = [
   "salman"
 ];
 
-
 export default function GamePage() {
   const { code } = useParams();
   const [playerName] = useState(() => localStorage.getItem("playerName"));
@@ -21,6 +20,7 @@ export default function GamePage() {
   const [isHost, setIsHost] = useState(false);
   const [gameState, setGameState] = useState(null);
   const [timer, setTimer] = useState(120);
+  const [tentativeCount, setTentativeCount] = useState(0);
   const timerRef = useRef(null);
 
   const { t, i18n } = useTranslation();
@@ -30,7 +30,6 @@ export default function GamePage() {
     document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
   }, [i18n.language]);
 
-  // Fetch players + host status
   useEffect(() => {
     const playersRef = ref(db, `teams/${code}/players`);
     const metaRef = ref(db, `teams/${code}/meta`);
@@ -46,7 +45,6 @@ export default function GamePage() {
     });
   }, [code, playerName]);
 
-  // Initialize game (host only)
   useEffect(() => {
     const gameRef = ref(db, `teams/${code}/game`);
 
@@ -78,17 +76,19 @@ export default function GamePage() {
         validated: false,
         remainingTime: 120,
         guessTimes: {},
-        gameFinished: false
+        gameFinished: false,
+        tentativePlayer: null,
+        tentativeCount: {},
+        completed: []
       });
     }
   };
 
-  // Host controls countdown
   useEffect(() => {
     if (!gameState || !isHost || gameState.gameFinished) return;
 
     const currentPlayer = gameState.turnOrder?.[gameState.currentTurnIndex];
-    if (currentPlayer) {
+    if (currentPlayer && !gameState.tentativePlayer) {
       let countdown = 120;
       set(ref(db, `teams/${code}/game/remainingTime`), countdown);
 
@@ -105,9 +105,8 @@ export default function GamePage() {
     }
 
     return () => clearInterval(timerRef.current);
-  }, [gameState?.currentTurnIndex, isHost]);
+  }, [gameState?.currentTurnIndex, gameState?.tentativePlayer, isHost]);
 
-  // All players listen to the shared timer
   useEffect(() => {
     const timeRef = ref(db, `teams/${code}/game/remainingTime`);
     onValue(timeRef, (snap) => {
@@ -116,26 +115,45 @@ export default function GamePage() {
     });
   }, [code]);
 
-  // Host auto-ends turn on validation
-  useEffect(() => {
-    if (!gameState || !isHost || gameState.gameFinished) return;
+  const handleMakeTentative = async () => {
+    const newCount = { ...(gameState.tentativeCount || {}) };
+    const count = (newCount[playerName] || 0) + 1;
+    newCount[playerName] = count;
 
-    if (gameState.validated === true) {
-      clearInterval(timerRef.current);
-      handleEndTurn(true);
+    if (count > 3) {
+      await handleEndTurn(false);
+      return;
     }
-  }, [gameState?.validated, isHost]);
 
-  // Guess validation handler
+    await update(ref(db, `teams/${code}/game`), {
+      tentativePlayer: playerName,
+      tentativeTime: 120 - timer,
+      tentativeCount: newCount
+    });
+  };
+
+  const handleValidateTentative = async (correct) => {
+    if (correct) {
+      await handleEndTurn(true);
+    } else {
+      const newTime = Math.max(timer - 5, 0);
+      await update(ref(db, `teams/${code}/game`), {
+        tentativePlayer: null,
+        tentativeTime: null,
+        remainingTime: newTime
+      });
+    }
+  };
+
   const handleValidateGuess = async () => {
     await update(ref(db, `teams/${code}/game`), { validated: true });
   };
 
- 
   const handleEndTurn = async (guessedCorrectly) => {
     const gameRef = ref(db, `teams/${code}/game`);
     const snap = await get(gameRef);
     const game = snap.val();
+
     const currentPlayer = game.turnOrder[game.currentTurnIndex];
     const guessTimes = game.guessTimes || {};
     const completed = game.completed || [];
@@ -146,17 +164,14 @@ export default function GamePage() {
       completed.push(currentPlayer);
     }
 
-    // Compute next turn for someone not yet completed
     const totalPlayers = game.turnOrder.length;
     let nextIndex = game.currentTurnIndex;
-    let found = false;
 
     for (let i = 1; i <= totalPlayers; i++) {
       const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
       const candidate = game.turnOrder[candidateIndex];
       if (!completed.includes(candidate)) {
         nextIndex = candidateIndex;
-        found = true;
         break;
       }
     }
@@ -169,111 +184,59 @@ export default function GamePage() {
       validated: false,
       remainingTime: 120,
       completed,
-      gameFinished
+      gameFinished,
+      tentativePlayer: null,
+      tentativeTime: null
     });
   };
 
-  const handleRestartGame = async () => {
-    const gameRef = ref(db, `teams/${code}/game`);
-  
-    const shuffled = [...players].sort(() => 0.5 - Math.random());
-    const assignedChars = {};
-    shuffled.forEach((p, i) => {
-      assignedChars[p] = charactersPool[i % charactersPool.length];
-    });
-  
-    await set(gameRef, {
-      turnOrder: shuffled,
-      currentTurnIndex: 0,
-      characters: assignedChars,
-      validated: false,
-      remainingTime: 120,
-      guessTimes: {},
-      gameFinished: false
-    });
-  };
-  
-
-  // Show leaderboard
-  if (gameState?.gameFinished && gameState?.guessTimes) {
-    const results = Object.entries(gameState.guessTimes).sort(([, a], [, b]) => a - b);
-  
-    return (
-      <div style={leaderboardStyles.wrapper}>
-        <h2 style={leaderboardStyles.title}>🏁 {t("gameOver")}</h2>
-        <h3 style={leaderboardStyles.subtitle}>🏆 {t("results")}</h3>
-        <ul style={leaderboardStyles.list}>
-          {results.map(([name, time], index) => (
-            <li key={name} style={leaderboardStyles.item}>
-              <span style={leaderboardStyles.rank(index)}>{rankEmoji(index)} {index + 1}.</span>{" "}
-              <strong>{name}</strong> — ⏱ <span style={leaderboardStyles.time}>{time} {t("seconds")}</span>
-            </li>
-          ))}
-        </ul>
-
-        {isHost && (
-      <button
-        onClick={handleRestartGame}
-        style={{
-          marginTop: "2rem",
-          padding: "0.8rem 1.5rem",
-          fontSize: "1rem",
-          backgroundColor: "#2e7d32",
-          color: "white",
-          border: "none",
-          borderRadius: "10px",
-          cursor: "pointer"
-        }}
-      >
-        🔄 {t("newGame")}
-      </button>
-    )}
-      </div>
-    );
-  }
-  
-
-  if (!gameState || !gameState.turnOrder) {
-    return <p>جاري تحميل اللعبة...</p>;
-  }
-
-  const currentPlayer = gameState.turnOrder[gameState.currentTurnIndex];
+  const currentPlayer = gameState?.turnOrder?.[gameState.currentTurnIndex];
   const isMyTurn = currentPlayer === playerName;
-  const charName = gameState.characters[currentPlayer];
-  console.log("character", charName);
-  console.log("✅ facts.waraka", t("facts.waraka", { returnObjects: true }));
+  const charName = gameState?.characters?.[currentPlayer];
   const facts = t(`facts.${charName}`, {
     returnObjects: true,
     defaultValue: []
   });
-  
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
         <h2 style={styles.roundTitle}>🎯 {t("currentRound")}: {currentPlayer}</h2>
         <p style={styles.timer}>⏱ {t("timeLeft")}: <strong>{timer}</strong> {t("seconds")}</p>
       </div>
-  
+
       {isMyTurn ? (
-       <p style={styles.guessPrompt}>🤔 {t("yourTurn")}</p>
+        <>
+          <p style={styles.guessPrompt}>🤔 {t("yourTurn")}</p>
+          {gameState?.tentativePlayer === playerName ? (
+            <p style={styles.guessPrompt}>{t("waitingValidation")}</p>
+          ) : (
+            <button style={styles.validateButton} onClick={handleMakeTentative}>
+              🎯 {t("makeTentative")}
+            </button>
+          )}
+        </>
       ) : (
         <div style={styles.cardSection}>
-          <p style={styles.characterLabel}>🔐 {t("notYourTurn")}:</p>
-          <CharacterCard
-  name={t(`characterNames.${charName}`)}
-  facts={Array.isArray(facts) ? facts : []}
-/>
-          {!gameState.validated && (
-            <button style={styles.validateButton} onClick={handleValidateGuess}>
-              ✅ {t("correctGuess")}
-            </button>
+          <p style={styles.characterLabel}>🔐 {t("notYourTurn")}</p>
+          <CharacterCard name={t(`characterNames.${charName}`)} facts={facts} />
+
+          {gameState?.tentativePlayer === currentPlayer && (
+            <>
+              <button style={styles.validateButton} onClick={() => handleValidateTentative(true)}>
+                ✅ {t("validateGuess")}
+              </button>
+              <button style={styles.validateButton} onClick={() => handleValidateTentative(false)}>
+                ❌ {t("rejectGuess")}
+              </button>
+            </>
           )}
         </div>
       )}
     </div>
   );
-  
 }
+
 
 const styles = {
   wrapper: {
