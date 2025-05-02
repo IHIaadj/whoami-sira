@@ -20,8 +20,10 @@ export default function GamePage() {
   const [isHost, setIsHost] = useState(false);
   const [gameState, setGameState] = useState(null);
   const [timer, setTimer] = useState(120);
-  const [tentativeCount, setTentativeCount] = useState(0);
   const timerRef = useRef(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [hintFact, setHintFact] = useState("");
 
   const { t, i18n } = useTranslation();
 
@@ -83,30 +85,42 @@ export default function GamePage() {
       });
     }
   };
-
+  
   useEffect(() => {
     if (!gameState || !isHost || gameState.gameFinished) return;
-
+  
     const currentPlayer = gameState.turnOrder?.[gameState.currentTurnIndex];
-    if (currentPlayer && !gameState.tentativePlayer) {
-      let countdown = 120;
-      set(ref(db, `teams/${code}/game/remainingTime`), countdown);
-
-      clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        countdown -= 1;
-        set(ref(db, `teams/${code}/game/remainingTime`), countdown);
-
-        if (countdown <= 0) {
-          clearInterval(timerRef.current);
-          handleEndTurn(false);
-        }
-      }, 1000);
-    }
-
+    if (!currentPlayer || gameState.tentativePlayer) return;
+  
+    let countdown = gameState.remainingTime ?? 120;
+  
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(async () => {
+      let newCountdown = countdown - 1;
+  
+      // If someone used a hint, apply penalty once
+      if (gameState.hintUsedBy === currentPlayer) {
+        newCountdown = Math.max(newCountdown - 8, 0); // apply 8s penalty
+        await update(ref(db, `teams/${code}/game`), {
+          hintUsedBy: null, // reset flag
+          remainingTime: newCountdown
+        });
+      } else {
+        await set(ref(db, `teams/${code}/game/remainingTime`), newCountdown);
+      }
+  
+      countdown = newCountdown;
+  
+      if (newCountdown <= 0) {
+        clearInterval(timerRef.current);
+        handleEndTurn(false);
+      }
+    }, 1000);
+  
     return () => clearInterval(timerRef.current);
-  }, [gameState?.currentTurnIndex, gameState?.tentativePlayer, isHost]);
-
+  }, [gameState?.currentTurnIndex, gameState?.tentativePlayer, isHost, gameState?.hintUsedBy]);
+  
+  
   useEffect(() => {
     const timeRef = ref(db, `teams/${code}/game/remainingTime`);
     onValue(timeRef, (snap) => {
@@ -120,11 +134,6 @@ export default function GamePage() {
     const count = (newCount[playerName] || 0) + 1;
     newCount[playerName] = count;
 
-    if (count > 3) {
-      await handleEndTurn(false);
-      return;
-    }
-
     await update(ref(db, `teams/${code}/game`), {
       tentativePlayer: playerName,
       tentativeTime: 120 - timer,
@@ -136,19 +145,53 @@ export default function GamePage() {
     if (correct) {
       await handleEndTurn(true);
     } else {
+      const currentPlayer = gameState.turnOrder[gameState.currentTurnIndex];
+      const currentTentativeCount = (gameState.tentativeCount?.[currentPlayer] || 0);
+  
+      console.log("count", currentTentativeCount);
+  
+      if (currentTentativeCount >= 3) {
+        await handleEndTurn(false);
+        return;
+      }
+  
       const newTime = Math.max(timer - 5, 0);
       await update(ref(db, `teams/${code}/game`), {
         tentativePlayer: null,
         tentativeTime: null,
         remainingTime: newTime
       });
+  
+      if (isHost) {
+        clearInterval(timerRef.current);
+        let countdown = newTime;
+        timerRef.current = setInterval(() => {
+          countdown -= 1;
+          set(ref(db, `teams/${code}/game/remainingTime`), countdown);
+          if (countdown <= 0) {
+            clearInterval(timerRef.current);
+            handleEndTurn(false);
+          }
+        }, 1000);
+      }
     }
   };
-
-  const handleValidateGuess = async () => {
-    await update(ref(db, `teams/${code}/game`), { validated: true });
+  
+  const handleShowHint = async () => {
+    if (hintUsed || !facts.length) return;
+  
+    const randomIndex = Math.floor(Math.random() * facts.length);
+    const selectedFact = facts[randomIndex];
+  
+    setHintFact(selectedFact);
+    setHintUsed(true);
+  
+    // Let host apply the 8s penalty
+    await update(ref(db, `teams/${code}/game`), {
+      hintUsedBy: playerName
+    });
   };
-
+  
   const handleEndTurn = async (guessedCorrectly) => {
     const gameRef = ref(db, `teams/${code}/game`);
     const snap = await get(gameRef);
@@ -166,6 +209,10 @@ export default function GamePage() {
 
     const totalPlayers = game.turnOrder.length;
     let nextIndex = game.currentTurnIndex;
+    const nextPlayer = game.turnOrder[nextIndex];
+    const tentativeCount = game.tentativeCount || {};
+    tentativeCount[nextPlayer] = 0;
+
 
     for (let i = 1; i <= totalPlayers; i++) {
       const candidateIndex = (game.currentTurnIndex + i) % totalPlayers;
@@ -186,9 +233,35 @@ export default function GamePage() {
       completed,
       gameFinished,
       tentativePlayer: null,
-      tentativeTime: null
+      tentativeTime: null,
+      tentativeCount  // 👈 include the reset
+    });    
+  };
+
+  const handleRestartGame = async () => {
+    const gameRef = ref(db, `teams/${code}/game`);
+  
+    const shuffled = [...players].sort(() => 0.5 - Math.random());
+    const assignedChars = {};
+    shuffled.forEach((p, i) => {
+      assignedChars[p] = charactersPool[i % charactersPool.length];
+    });
+  
+    await set(gameRef, {
+      turnOrder: shuffled,
+      currentTurnIndex: 0,
+      characters: assignedChars,
+      validated: false,
+      remainingTime: 120,
+      guessTimes: {},
+      gameFinished: false,
+      tentativePlayer: null,
+      tentativeTime: null,
+      tentativeCount: {},
+      completed: []
     });
   };
+  
 
   const currentPlayer = gameState?.turnOrder?.[gameState.currentTurnIndex];
   const isMyTurn = currentPlayer === playerName;
@@ -197,6 +270,30 @@ export default function GamePage() {
     returnObjects: true,
     defaultValue: []
   });
+
+  if (gameState?.gameFinished && gameState?.guessTimes) {
+    const results = Object.entries(gameState.guessTimes).sort(([, a], [, b]) => a - b);
+
+    return (
+      <div style={styles.wrapper}>
+        <h2 style={styles.roundTitle}>🏁 {t("gameOver")}</h2>
+        <h3 style={styles.timer}>🏆 {t("results")}</h3>
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {results.map(([name, time], index) => (
+            <li key={name} style={styles.timer}>
+              {index + 1}. {name} — ⏱ {time} {t("seconds")}
+            </li>
+          ))}
+        </ul>
+        {isHost && gameState?.gameFinished && (
+  <button onClick={handleRestartGame} style={styles.validateButton}>
+    🔄 {t("newGame")}
+  </button>
+)}
+
+      </div>
+    );
+  }
 
   return (
     <div style={styles.wrapper}>
@@ -208,6 +305,50 @@ export default function GamePage() {
       {isMyTurn ? (
         <>
           <p style={styles.guessPrompt}>🤔 {t("yourTurn")}</p>
+          <div style={{ width: "100%", maxWidth: "400px", marginBottom: "1rem", textAlign: "right" }}>
+          <button
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            style={{
+              backgroundColor: "#e0f2f1",
+              border: "1px solid #4CAF50",
+              borderRadius: "8px",
+              padding: "0.5rem 1rem",
+              fontSize: "1rem",
+              cursor: "pointer",
+              color: "#2e7d32",
+              width: "100%",
+              textAlign: "right"
+            }}
+          >
+            {showSuggestions ? "🔽 " : "🔼 "}
+            {t("suggestedQuestionsTitle")}
+          </button>
+
+          {showSuggestions && (
+            <ul style={{ padding: "0.5rem 1.2rem", backgroundColor: "#ffffff", borderRadius: "8px", marginTop: "0.5rem", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+              {t("suggestedQuestions", { returnObjects: true }).map((q, i) => (
+                <li key={i} style={{ marginBottom: "0.4rem", color: "#333", fontSize: "1rem" }}>{q}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <button
+          style={{ ...styles.validateButton, backgroundColor: "#ffcc00", color: "#333" }}
+          onClick={handleShowHint}
+          disabled={hintUsed}
+        >
+          💡 {t("showHint")}
+        </button>
+
+        {hintUsed && (
+          <p style={{ ...styles.guessPrompt, backgroundColor: "#fffbe6", marginTop: "1rem" }}>
+            🔍 {t("hint")}: {hintFact}
+          </p>
+        )}
+
+
+
           {gameState?.tentativePlayer === playerName ? (
             <p style={styles.guessPrompt}>{t("waitingValidation")}</p>
           ) : (
@@ -236,8 +377,6 @@ export default function GamePage() {
     </div>
   );
 }
-
-
 const styles = {
   wrapper: {
     minHeight: "100vh",

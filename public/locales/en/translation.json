@@ -70,12 +70,34 @@
 }, 
 "howToPlayTitle": "📖 How to Play",
 "howToPlaySteps": [
-  "Create a team or join an existing one by entering the team code.",
-  "Wait for all players to join. The host can then start the game.",
-  "Each player is assigned a Sīrah character and must guess who they are by asking yes/no questions.",
-  "During your turn, you can’t see your own character; others see it and validate if your guess is right.",
-  "The game ends when everyone has guessed. The fastest correct guesser wins!"
-]
+  "Start by creating a new team or joining an existing one using a team code.",
+  "Wait for all players to join, then the host starts the game.",
+  "Each player is secretly assigned a character from the Sīrah. The goal is to guess who you are by asking yes/no questions.",
+  "During your turn, you cannot see your character, while others can see it and help validate your guess.",
+  "You have 120 seconds during your turn to guess your character.",
+  "Click the tentative button to make a guess. Other players will confirm if it's correct.",
+  "Each player has 3 tentative attempts per turn. After 3 incorrect guesses, the turn ends automatically.",
+  "For every wrong tentative, 5 seconds will be deducted from your timer.",
+  "The game ends when all players have found their characters. The winner is the one who guessed correctly in the shortest time!"
+], 
+"suggestedQuestionsTitle": "📋 Suggested Questions",
+"suggestedQuestions": [
+  "Is it a man?",
+  "Was he among the first to embrace Islam?",
+  "Did he migrate with the Prophet ﷺ to Madinah?",
+  "Did he migrate to Abyssinia (Habasha)?",
+  "Was he one of the close companions of the Prophet ﷺ?",
+  "Was he a slave who was freed?",
+  "Did he become a caliph after the Prophet ﷺ?",
+  "Was he born in Makkah?",
+  "Was he the muezzin (caller to prayer)?",
+  "Was he part of the Prophet’s household (Ahl al-Bayt)?"
+], "showHint": "Get a Hint (-8 sec)",
+"hint": "Hint", 
+"validateGuess": "Validate Guess",
+"rejectGuess": "Reject Guess",
+"makeTentative": "Make a Tentative Guess",
+"waitingValidation": "Waiting for others to validate your guess..."
 
   }
   
