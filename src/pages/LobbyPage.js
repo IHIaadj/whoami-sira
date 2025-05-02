@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db, get, ref, push, onValue, set } from "../firebase";
+import { db, get, ref, push, onValue, set, update } from "../firebase";
 import { useTranslation } from "react-i18next";
 
 export default function LobbyPage() {
@@ -9,7 +9,7 @@ export default function LobbyPage() {
   const { t, i18n } = useTranslation();
 
   const [players, setPlayers] = useState([]);
-  const [name] = useState(() => {
+  const [name, setName] = useState(() => {
     const stored = localStorage.getItem("playerName");
     if (stored) return stored;
     const generated = "Player-" + Math.floor(Math.random() * 1000);
@@ -18,18 +18,19 @@ export default function LobbyPage() {
   });
   const [isHost, setIsHost] = useState(false);
   const hasJoinedRef = useRef(false);
+  const playerKeyRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.lang = i18n.language;
     document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
   }, [i18n.language]);
 
-  // Register player and set host
   useEffect(() => {
     if (!hasJoinedRef.current) {
       const playersRef = ref(db, `teams/${code}/players`);
       const newPlayerRef = push(playersRef);
       set(newPlayerRef, name);
+      playerKeyRef.current = newPlayerRef.key;
 
       const metaRef = ref(db, `teams/${code}/meta`);
       get(metaRef).then((snap) => {
@@ -46,7 +47,6 @@ export default function LobbyPage() {
     }
   }, [code, name]);
 
-  // Listen to players
   useEffect(() => {
     const playersRef = ref(db, `teams/${code}/players`);
     onValue(playersRef, (snapshot) => {
@@ -56,7 +56,6 @@ export default function LobbyPage() {
     });
   }, [code]);
 
-  // Listen for game start
   useEffect(() => {
     const gameStartedRef = ref(db, `teams/${code}/gameStarted`);
     onValue(gameStartedRef, (snapshot) => {
@@ -66,16 +65,41 @@ export default function LobbyPage() {
     });
   }, [code, navigate]);
 
-  // Start the game
   const handleStartGame = () => {
     const gameStartedRef = ref(db, `teams/${code}/gameStarted`);
     set(gameStartedRef, true);
+  };
+
+  const handleChangeName = (e) => {
+    const newName = e.target.value;
+    setName(newName);
+    localStorage.setItem("playerName", newName);
+    if (playerKeyRef.current) {
+      const playerRef = ref(db, `teams/${code}/players/${playerKeyRef.current}`);
+      set(playerRef, newName);
+    }
   };
 
   return (
     <div style={styles.wrapper}>
       <h2 style={styles.heading}>{t("teamCode")}:</h2>
       <div style={styles.codeBox}>{code}</div>
+
+      <label style={{ marginBottom: "1rem" }}>
+        ✏️ {t("yourName")}: 
+        <input
+          type="text"
+          value={name}
+          onChange={handleChangeName}
+          style={{
+            marginLeft: "0.5rem",
+            padding: "0.4rem",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+            fontSize: "1rem"
+          }}
+        />
+      </label>
 
       <p style={styles.subheading}>👥 {t("players")}:</p>
       <ul style={styles.playerList}>
